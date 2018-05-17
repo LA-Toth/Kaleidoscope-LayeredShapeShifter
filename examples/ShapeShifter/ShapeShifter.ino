@@ -1,6 +1,7 @@
 /* -*- mode: c++ -*-
  * Kaleidoscope-ShapeShifter -- Change the shifted symbols on any key of your choice
  * Copyright (C) 2016, 2017, 2018  Gergely Nagy
+ * Copyright 2018  László Attila Tóth
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,21 +39,39 @@ const Key keymaps[][ROWS][COLS] PROGMEM = {
 
     Key_RightShift, Key_RightAlt, Key_Spacebar, Key_RightControl,
     Key_NoKey),
+
+  [1] = KEYMAP_STACKED
+  (___, Key_6, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___,
+   ___,
+
+   ___, ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___, ___, ___, ___,
+   ___, ___, ___, ___,
+   ___), 
 };
 // *INDENT-ON*
 
-static const kaleidoscope::ShapeShifter::dictionary_t shape_shift_dictionary[] PROGMEM = {
-  {Key_1, Key_2},
-  {Key_2, Key_1},
-  {Key_NoKey, Key_NoKey},
-};
+// define layer mapping for ShapeShifter
+// SHSH_LAYER(base, shift) is used, where base is the layer which should have different shift'ed keys
+// and shift is the layer index which contains the replacement keys
+SHSH_LAYERS(
+            // SHSH_LAYER(DVORAK, DVORAK_SHIFT),
+            SHSH_LAYER(0, 1)
+            );
 
 KALEIDOSCOPE_INIT_PLUGINS(ShapeShifter);
 
 void setup() {
   Kaleidoscope.setup();
 
-  ShapeShifter.dictionary = shape_shift_dictionary;
+  // Register / use defined layer mapping
+  SHSH_USE_LAYERS();
 }
 
 void loop() {

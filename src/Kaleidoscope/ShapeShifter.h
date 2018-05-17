@@ -1,6 +1,7 @@
 /* -*- mode: c++ -*-
  * Kaleidoscope-ShapeShifter -- Change the shifted symbols on any key of your choice
  * Copyright (C) 2016, 2017  Gergely Nagy
+ * Copyright 2018  László Attila Tóth
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,17 +21,29 @@
 
 #include <Kaleidoscope.h>
 
+#define SHSH_NO_LAYER 255
+
+#define SHSH_LAYER(base, shift)  { base, shift }
+#define SHSH_LAYERS(layers...) \
+  static const kaleidoscope::ShapeShifter::layer_t shape_shifter_layers[] PROGMEM = { \
+    layers, \
+    SHSH_LAYER(SHSH_NO_LAYER, SHSH_NO_LAYER ),       \
+  }
+
+#define SHSH_USE_LAYERS() \
+  ShapeShifter.layers = shape_shifter_layers
+
 namespace kaleidoscope {
 
 class ShapeShifter : public KaleidoscopePlugin {
  public:
   typedef struct {
-    Key original, replacement;
-  } dictionary_t;
+    uint8_t base, shift;
+  } layer_t;
 
   ShapeShifter(void) {}
 
-  static const dictionary_t *dictionary;
+  static const layer_t *layers;
 
   EventHandlerResult onKeyswitchEvent(Key &mapped_key, byte row, byte col, uint8_t key_state);
   EventHandlerResult beforeReportingState();

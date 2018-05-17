@@ -1,6 +1,7 @@
-/* -*- mode: c++ -*-
+/* -*- mode: c++ -*- 
  * Kaleidoscope-ShapeShifter -- Change the shifted symbols on any key of your choice
  * Copyright (C) 2016, 2017  Gergely Nagy
+ * Copyright 2018  László Attila Tóth
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +19,11 @@
 
 #include <Kaleidoscope-ShapeShifter.h>
 #include <kaleidoscope/hid.h>
+#include "layers.h"
 
 namespace kaleidoscope {
 
-const ShapeShifter::dictionary_t *ShapeShifter::dictionary = NULL;
+const ShapeShifter::layer_t *ShapeShifter::layers = NULL;
 bool ShapeShifter::mod_active_;
 
 EventHandlerResult ShapeShifter::beforeReportingState() {
@@ -31,31 +33,32 @@ EventHandlerResult ShapeShifter::beforeReportingState() {
 }
 
 EventHandlerResult ShapeShifter::onKeyswitchEvent(Key &mapped_key, byte row, byte col, uint8_t key_state) {
-  if (!dictionary)
+  if (!layers)
     return EventHandlerResult::OK;
 
   // If Shift is not active, bail out early.
   if (!mod_active_)
     return EventHandlerResult::OK;
 
-  Key orig, repl;
-
-  // Try to find the current key in the dictionary
+  uint8_t active_layer = Layer.lookupActiveLayer(row, col);
   uint8_t i = 0;
-  do {
-    orig.raw = pgm_read_word(&(dictionary[i].original.raw));
-    i++;
-  } while (orig.raw != Key_NoKey.raw &&
-           orig.raw != mapped_key.raw);
-  i--;
+  uint8_t base;
 
-  // If not found, bail out.
-  if (orig.raw == Key_NoKey.raw)
+  do {
+    base = pgm_read_word(&(layers[i].base));
+    ++i;
+  }  while (base != SHSH_NO_LAYER && base != active_layer);
+
+  if (base == SHSH_NO_LAYER) 
     return EventHandlerResult::OK;
 
-  repl.raw = pgm_read_word(&(dictionary[i].replacement.raw));
+  uint8_t shift_layer = pgm_read_word(&(layers[i - 1].shift));
 
-  // If found, handle the alternate key instead
+  Key repl = Layer.getKeyFromPROGMEM(shift_layer, row, col);
+
+  if (repl.raw == Key_Transparent.raw)
+    return EventHandlerResult::OK;
+
   mapped_key = repl;
   return EventHandlerResult::OK;
 }

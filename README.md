@@ -28,36 +28,39 @@ configure the provided `ShapeShifter` object to use the dictionary:
 #include <Kaleidoscope.h>
 #include <Kaleidoscope-ShapeShifter.h>
 
-static const kaleidoscope::ShapeShifter::dictionary_t shape_shift_dictionary[] PROGMEM = {
- {Key_1, Key_4},
- {Key_4, Key_1},
- {Key_NoKey, Key_NoKey},
-};
+
+// define layer mapping for ShapeShifter
+// SHSH_LAYER(base, shift) is used, where base is the layer which should have different shift'ed keys
+// and shift is the layer index which contains the replacement keys
+SHSH_LAYERS(
+            // SHSH_LAYER(DVORAK, DVORAK_SHIFT),
+            SHSH_LAYER(0, 1)
+);
 
 KALEIDOSCOPE_INIT_PLUGINS(ShapeShifter);
 
 void setup() {
   Kaleidoscope.setup();
 
-  ShapeShifter.dictionary = shape_shift_dictionary;
+  // Register / use defined layer mapping
+  SHSH_USE_LAYERS();
 }
 ```
 
-The dictionary is made up of `Key` pairs: the first one is to replace, the
-second is the replacement. The dictionary must be closed with a `{Key_NoKey,
-Key_NoKey}` pair, and **must** reside in `PROGMEM`.
+The `SHSH_LAYERS`, `SHSH_LAYER`, and `SHSH_USE_LAYERS` are helper macros for easier usage.
 
 ## Plugin methods
 
 The plugin provides the `ShapeShifter` object, with the following methods and
 properties:
 
-### `.dictionary`
+### `.layers`
 
-> Set this property to the dictionary `ShapeShifter` should use. The dictionary
-> is an array of `kaleidoscope::ShapeShifter::dictionary_t` elements, which is
-> just a very verbose way of saying that its a pair of keys. The first one is
-> the one to replace, and the other is to replace it with.
+> Set this property to the dictionary `ShapeShifter` should use. The layers
+> is an array of `kaleidoscope::ShapeShifter::layer_t` elements, which is
+> just a very verbose way of saying that its a pair of layer indices.
+> The first one is the layer that may have replacement keys defined in
+> a layer having index stored in the second layer index.
 >
 > Be aware that the replacement key will be pressed with `Shift` held, so do
 > keep that in mind!
