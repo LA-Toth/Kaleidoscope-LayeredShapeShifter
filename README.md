@@ -49,6 +49,9 @@ void setup() {
 
 The `SHSH_LAYERS`, `SHSH_LAYER`, and `SHSH_USE_LAYERS` are helper macros for easier usage.
 
+Any key can be unshifted with the `SHSH_UNSHIFT` or by using the `LSHIFT` modifier.
+Unfortunately it works only for single keypresses, repeated may be sent with the SHIFT modifier,
+
 ## Plugin methods
 
 The plugin provides the `ShapeShifter` object, with the following methods and

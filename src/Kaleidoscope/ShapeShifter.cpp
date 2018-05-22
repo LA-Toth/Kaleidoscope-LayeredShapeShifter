@@ -1,4 +1,4 @@
-/* -*- mode: c++ -*- 
+/* -*- mode: c++ -*-
  * Kaleidoscope-ShapeShifter -- Change the shifted symbols on any key of your choice
  * Copyright (C) 2016, 2017  Gergely Nagy
  * Copyright 2018  László Attila Tóth
@@ -21,10 +21,14 @@
 #include <kaleidoscope/hid.h>
 #include "layers.h"
 
+#define TOPSYTURVY 0b01000000
+
 namespace kaleidoscope {
 
 const ShapeShifter::layer_t *ShapeShifter::layers = NULL;
 bool ShapeShifter::mod_active_;
+uint8_t ShapeShifter::mod_state_;
+uint8_t ShapeShifter::last_pressed_position_;
 
 EventHandlerResult ShapeShifter::beforeReportingState() {
   mod_active_ = hid::isModifierKeyActive(Key_LeftShift) ||
@@ -36,8 +40,32 @@ EventHandlerResult ShapeShifter::onKeyswitchEvent(Key &mapped_key, byte row, byt
   if (!layers)
     return EventHandlerResult::OK;
 
+  if (key_state & TOPSYTURVY)
+    return EventHandlerResult::OK;
+
+  if (mapped_key.raw == Key_LeftShift.raw)
+    bitWrite(mod_state_, 0, keyIsPressed(key_state));
+  if (mapped_key.raw == Key_RightShift.raw)
+    bitWrite(mod_state_, 1, keyIsPressed(key_state));
+
+  if (!keyIsPressed(key_state) && !keyWasPressed(key_state))
+    return EventHandlerResult::OK;
+
+  if (!((mapped_key.keyCode >= HID_KEYBOARD_A_AND_A && mapped_key.keyCode <= HID_KEYBOARD_F12) || (mapped_key.keyCode >= HID_KEYBOARD_F13 && mapped_key.keyCode <= HID_KEYBOARD_F24))) {
+    // Original key is not a regular key, ignoring it.
+    return EventHandlerResult::OK;
+  }
+
+  if (keyToggledOn(key_state)) {
+    last_pressed_position_ = row * COLS + col;
+  } else {
+    if (last_pressed_position_ != row * COLS + col) {
+      return EventHandlerResult::EVENT_CONSUMED;
+    }
+  }
+
   // If Shift is not active, bail out early.
-  if (!mod_active_)
+  if (!mod_active_ || !mod_state_)
     return EventHandlerResult::OK;
 
   uint8_t active_layer = Layer.lookupActiveLayer(row, col);
@@ -49,7 +77,7 @@ EventHandlerResult ShapeShifter::onKeyswitchEvent(Key &mapped_key, byte row, byt
     ++i;
   }  while (base != SHSH_NO_LAYER && base != active_layer);
 
-  if (base == SHSH_NO_LAYER) 
+  if (base == SHSH_NO_LAYER)
     return EventHandlerResult::OK;
 
   uint8_t shift_layer = pgm_read_word(&(layers[i - 1].shift));
@@ -58,6 +86,21 @@ EventHandlerResult ShapeShifter::onKeyswitchEvent(Key &mapped_key, byte row, byt
 
   if (repl.raw == Key_Transparent.raw)
     return EventHandlerResult::OK;
+
+  if (repl.flags & SHIFT_HELD) {
+    repl.flags &= ~SHIFT_HELD;
+    hid::releaseRawKey(Key_LeftShift);
+    hid::releaseRawKey(Key_RightShift);
+    handleKeyswitchEvent(repl, row, col, key_state | TOPSYTURVY | INJECTED);
+    hid::sendKeyboardReport();
+
+    if (bitRead(mod_state_, 0))
+      hid::pressRawKey(Key_LeftShift);
+    if (bitRead(mod_state_, 1))
+      hid::pressRawKey(Key_RightShift);
+
+    return EventHandlerResult::EVENT_CONSUMED;
+  }
 
   mapped_key = repl;
   return EventHandlerResult::OK;

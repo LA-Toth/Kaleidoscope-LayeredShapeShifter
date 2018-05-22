@@ -30,8 +30,10 @@
     SHSH_LAYER(SHSH_NO_LAYER, SHSH_NO_LAYER ),       \
   }
 
-#define SHSH_USE_LAYERS() \
+#define SHSH_USE_LAYERS()                       \
   ShapeShifter.layers = shape_shifter_layers
+
+#define SHSH_UNSHIFT(x) LSHIFT(x)
 
 namespace kaleidoscope {
 
@@ -57,6 +59,8 @@ class ShapeShifter : public KaleidoscopePlugin {
 
  private:
   static bool mod_active_;
+  static uint8_t mod_state_;
+  static uint8_t last_pressed_position_;
 };
 
 }
